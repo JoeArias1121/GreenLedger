@@ -7,6 +7,25 @@ wheels/
 *.egg-info
 *.egg
 *.whl
-.env
+
 # Virtual environments
 .venv
+env/
+venv/
+ENV/
+
+# Docker
+.docker/
+
+# Local Dev/Secrets
+.env
+.env.*
+!.env.example
+
+# Database
+# (We ignore local data volumes so they don't bloat the repo)
+postgres_data/
+
+# IDEs
+.vscode/
+.idea/

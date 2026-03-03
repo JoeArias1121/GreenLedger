@@ -1,0 +1,21 @@
+name: green_ledger
+
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: green_ledger_db
+    restart: unless-stopped
+    
+    environment:
+      POSTGRES_PASSWORD: test
+      POSTGRES_USER: test
+      POSTGRES_DB: green_ledger_db
+    
+    ports:
+      - "5432:5432"
+    
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
