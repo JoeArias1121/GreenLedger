@@ -3,6 +3,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import String, text, ForeignKey, Integer, DateTime, Numeric, func
 from datetime import datetime
 from app.core.database import Base
+from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy import select
 
 class User(Base):
   __tablename__ = "users"
@@ -21,6 +23,19 @@ class Account(Base):
   name: Mapped[str] = mapped_column(String(50), nullable=False)
   balance: Mapped[Decimal] = mapped_column(Numeric(10, 2), server_default=text("0.00"), nullable=False)
   user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+  holdings: Mapped[list["PortfolioHolding"]] = relationship()
+
+  @hybrid_property
+  def total_holdings_amount(self) -> Decimal:
+      return sum(h.amount for h in self.holdings)
+
+  @total_holdings_amount.expression
+  def total_holdings_amount(cls):
+      return (
+          select(func.sum(PortfolioHolding.amount))
+          .where(PortfolioHolding.account_id == cls.id)
+          .label("total_holdings_amount")
+      )
 
 
 class Ticker(Base):
@@ -36,7 +51,7 @@ class PortfolioHolding(Base):
   id: Mapped[int] = mapped_column(primary_key=True)
   ticker: Mapped[str] = mapped_column(ForeignKey("ticker.symbol"), nullable=False)
   account_id: Mapped[int] = mapped_column(ForeignKey("accounts.id"), nullable=False)
-  quantity: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
+  amount: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
 
 
 class InvestmentRule(Base):
@@ -52,7 +67,7 @@ class ESGRating(Base):
   __tablename__ = "esg_rating"
 
   id: Mapped[int] = mapped_column(primary_key=True)
-  ticker: Mapped[str] = mapped_column(String(5), ForeignKey("ticker.symbol"), nullable=False)
+  ticker: Mapped[str] = mapped_column(String(5), ForeignKey("ticker.symbol"), unique=True, nullable=False)
   carbon_score: Mapped[int] = mapped_column(Integer, nullable=False)
   labor_score: Mapped[int] = mapped_column(Integer, nullable=False)
   updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
