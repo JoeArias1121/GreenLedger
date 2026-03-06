@@ -23,7 +23,8 @@ class Account(Base):
   name: Mapped[str] = mapped_column(String(50), nullable=False)
   balance: Mapped[Decimal] = mapped_column(Numeric(10, 2), server_default=text("0.00"), nullable=False)
   user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
-  holdings: Mapped[list["PortfolioHolding"]] = relationship()
+  holdings: Mapped[list["PortfolioHolding"]] = relationship(back_populates="account")
+  investment_rule: Mapped["InvestmentRule"] = relationship(back_populates="account")
 
   @hybrid_property
   def total_holdings_amount(self) -> Decimal:
@@ -43,6 +44,9 @@ class Ticker(Base):
 
   symbol: Mapped[str] = mapped_column(primary_key=True)
   name: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+  esg_rating: Mapped["ESGRating"] = relationship(back_populates="ticker")
+
+
 
 
 class PortfolioHolding(Base):
@@ -53,24 +57,31 @@ class PortfolioHolding(Base):
   account_id: Mapped[int] = mapped_column(ForeignKey("accounts.id"), nullable=False)
   amount: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
 
+  account: Mapped["Account"] = relationship(back_populates="holdings")
+
+
 
 class InvestmentRule(Base):
   __tablename__ = "investment_rule"
 
   id: Mapped[int] = mapped_column(primary_key=True)
-  account_id: Mapped[int] = mapped_column(ForeignKey("accounts.id"), nullable=False)
+  account_id: Mapped[int] = mapped_column(ForeignKey("accounts.id"), unique=True, nullable=False)
   min_carbon_score: Mapped[int] = mapped_column(Integer, nullable=False)
   min_labor_score: Mapped[int] = mapped_column(Integer, nullable=False)
+
+  account: Mapped["Account"] = relationship(back_populates="investment_rule")
 
 
 class ESGRating(Base):
   __tablename__ = "esg_rating"
 
   id: Mapped[int] = mapped_column(primary_key=True)
-  ticker: Mapped[str] = mapped_column(String(5), ForeignKey("ticker.symbol"), unique=True, nullable=False)
+  ticker_symbol: Mapped[str] = mapped_column(String(5), ForeignKey("ticker.symbol"), unique=True, nullable=False)
   carbon_score: Mapped[int] = mapped_column(Integer, nullable=False)
   labor_score: Mapped[int] = mapped_column(Integer, nullable=False)
   updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
+
+  ticker: Mapped["Ticker"] = relationship(back_populates="esg_rating")
   
 
 
